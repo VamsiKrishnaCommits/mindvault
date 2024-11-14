@@ -1,0 +1,24 @@
+.knowledge-keeper-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 20px;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+}
+
+.knowledge-keeper-btn:hover {
+    background-color: rgba(29, 155, 240, 0.1);
+}
+
+.category-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background-color: #1d9bf0;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+} 
