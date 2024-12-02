@@ -1,59 +1,59 @@
-let allTweets = {};
+let allPosts = {};
 
-function displayTweets(tweets, searchTerm = '') {
-    const container = document.getElementById('tweets-container');
-    console.log('Displaying tweets:', tweets);
+function displayPosts(posts, searchTerm = '') {
+    const container = document.getElementById('posts-container');
+    console.log('Displaying posts:', posts);
     
     if (!container) {
-        console.error('Tweet container not found!');
+        console.error('Post container not found!');
         return;
     }
     
     container.innerHTML = '';
 
-    if (!tweets || Object.keys(tweets).length === 0) {
-        console.log('No tweets to display');
+    if (!posts || Object.keys(posts).length === 0) {
+        console.log('No posts to display');
         container.innerHTML = `
             <div class="empty-state">
-                <p>No saved tweets yet!</p>
-                <small>Save tweets by clicking the 💾 button on Twitter</small>
+                <p>No saved posts yet!</p>
+                <small>Save posts by clicking the 💾 button on supported platforms</small>
             </div>`;
         return;
     }
 
-    const filteredTweets = Object.values(tweets).filter(tweet => {
+    const filteredPosts = Object.values(posts).filter(post => {
         if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return (
-            tweet.text?.toLowerCase().includes(searchLower) ||
-            tweet.author?.toLowerCase().includes(searchLower) ||
-            tweet.category?.toLowerCase().includes(searchLower)
+            post.text?.toLowerCase().includes(searchLower) ||
+            post.author?.toLowerCase().includes(searchLower) ||
+            post.category?.toLowerCase().includes(searchLower)
         );
     });
 
-    console.log('Filtered tweets:', filteredTweets);
+    console.log('Filtered posts:', filteredPosts);
 
-    if (filteredTweets.length === 0) {
+    if (filteredPosts.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <p>No tweets match your search</p>
+                <p>No posts match your search</p>
             </div>`;
         return;
     }
 
-    filteredTweets
+    filteredPosts
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .forEach(tweet => {
-            const tweetElement = document.createElement('div');
-            tweetElement.className = 'tweet';
-            tweetElement.innerHTML = `
-                <div class="category-tag">${tweet.category || 'Uncategorized'}</div>
-                <p class="tweet-author">${tweet.author || 'Unknown Author'}</p>
-                <p class="tweet-text">${tweet.text || 'No text'}</p>
-                <a href="${tweet.url}" target="_blank" class="tweet-link">View on Twitter</a>
-                <small class="tweet-timestamp">Saved: ${new Date(tweet.timestamp).toLocaleString()}</small>
+        .forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+            postElement.innerHTML = `
+                <div class="category-tag">${post.category || 'Uncategorized'}</div>
+                <p class="post-author">${post.author || 'Unknown Author'}</p>
+                <p class="post-text">${post.text || 'No text'}</p>
+                <a href="${post.url}" target="_blank" class="post-link">View Original</a>
+                <small class="post-timestamp">Saved: ${new Date(post.timestamp).toLocaleString()}</small>
             `;
-            container.appendChild(tweetElement);
+            container.appendChild(postElement);
         });
 }
 
@@ -67,23 +67,31 @@ function updateDebugData() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Popup DOM loaded');
+document.addEventListener('DOMContentLoaded', async () => {
+    const mainView = document.getElementById('main-view');
+    const summaryView = document.getElementById('summary-view');
     
-    // Initialize search functionality
+    if (mainView && summaryView) {
+        mainView.style.display = 'block';
+        summaryView.style.display = 'none';
+    }
+    
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            displayTweets(allTweets, e.target.value);
+            displayPosts(allPosts, e.target.value);
         });
     }
 
-    // Display tweets
-    chrome.storage.local.get(['tweets'], (result) => {
-        console.log('Retrieved tweets from storage:', result);
-        allTweets = result.tweets || {};
-        displayTweets(allTweets);
-    });
+    // Load posts immediately
+    try {
+        const result = await chrome.storage.local.get(['posts']);
+        console.log('Retrieved posts from storage:', result);
+        allPosts = result.posts || {};
+        displayPosts(allPosts);
+    } catch (error) {
+        console.error('Error loading posts:', error);
+    }
 
     // Debug buttons functionality
     const showStorageBtn = document.getElementById('showStorage');
@@ -101,28 +109,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (clearStorageBtn) {
         clearStorageBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all saved tweets?')) {
+            if (confirm('Are you sure you want to clear all saved posts?')) {
                 chrome.storage.local.clear(() => {
-                    allTweets = {};
-                    displayTweets({});
+                    allPosts = {};
+                    displayPosts({});
                     updateDebugData();
                 });
             }
         });
     }
 
-    document.getElementById('openConsole').addEventListener('click', () => {
-        chrome.tabs.create({ url: 'console.html' });
-    });
+    const openConsoleButton = document.getElementById('openConsole');
+    if (openConsoleButton) {
+        openConsoleButton.addEventListener('click', () => {
+            chrome.tabs.create({ 
+                url: chrome.runtime.getURL('console.html'),
+                active: true 
+            });
+        });
+    }
+
 });
 
 // Listen for storage changes
 chrome.storage.onChanged.addListener((changes, namespace) => {
     console.log('Storage changed:', changes);
-    if (namespace === 'local' && changes.tweets) {
-        allTweets = changes.tweets.newValue || {};
+    if (namespace === 'local' && changes.posts) {
+        allPosts = changes.posts.newValue || {};
         const searchInput = document.getElementById('searchInput');
-        displayTweets(allTweets, searchInput ? searchInput.value : '');
+        displayPosts(allPosts, searchInput ? searchInput.value : '');
         updateDebugData();
     }
-}); 
+});
